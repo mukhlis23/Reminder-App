@@ -175,7 +175,7 @@ class JadwalPage extends StatelessWidget {
                     const SizedBox(height: 10),
 
                     DropdownButtonFormField<String>(
-                      value: selectedKategori,
+                      initialValue: selectedKategori,
                       items: kategoriList
                           .map((k) => DropdownMenuItem(
                                 value: k,
