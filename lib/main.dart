@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'home_page.dart';
 import 'jadwal_page.dart';
+import 'profil_page.dart';
 
-
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
@@ -36,25 +36,48 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int index = 0;
+  final ValueNotifier<int> _currentIndex = ValueNotifier<int>(0);
 
-  final pages = const [
-    HomePage(),
-    JadwalPage(),
+  final List<Widget> _pages = [
+    const HomePage(),
+    const JadwalPage(),
+    const ProfilPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: pages[index],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: index,
-        onTap: (value) => setState(() => index = value),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.schedule), label: 'Jadwal'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        ],
+      body: ValueListenableBuilder<int>(
+        valueListenable: _currentIndex,
+        builder: (context, value, child) {
+          return _pages[value];
+        },
+      ),
+      bottomNavigationBar: ValueListenableBuilder<int>(
+        valueListenable: _currentIndex,
+        builder: (context, value, child) {
+          return BottomNavigationBar(
+            currentIndex: value,
+            onTap: (index) {
+              _currentIndex.value = index;
+            },
+            type: BottomNavigationBarType.fixed,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.schedule),
+                label: 'Jadwal',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Profil',
+              ),
+            ],
+          );
+        },
       ),
     );
   }

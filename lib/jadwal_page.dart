@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class JadwalPage extends StatelessWidget {
+class JadwalPage extends StatefulWidget {
   const JadwalPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final jadwalRef = FirebaseFirestore.instance.collection('DatabaseApp');
+  State<JadwalPage> createState() => _JadwalPageState();
+}
 
+class _JadwalPageState extends State<JadwalPage> {
+  final CollectionReference jadwalRef =
+      FirebaseFirestore.instance.collection('DatabaseApp');
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Jadwal'),
@@ -46,7 +52,7 @@ class JadwalPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      /// Jenis Kegiatan
+                      /// Judul
                       Text(
                         data['jenisKegiatan'] ?? '-',
                         style: const TextStyle(
@@ -57,45 +63,13 @@ class JadwalPage extends StatelessWidget {
 
                       const SizedBox(height: 8),
 
-                      Row(
-                        children: [
-                          const Icon(Icons.category, size: 16),
-                          const SizedBox(width: 6),
-                          Text(data['kategori'] ?? '-'),
-                        ],
+                      _infoRow(Icons.category, data['kategori']),
+                      _infoRow(Icons.date_range, data['tanggal']),
+                      _infoRow(
+                        Icons.access_time,
+                        '${data['jamDimulai']} - ${data['jamSelesai']}',
                       ),
-
-                      const SizedBox(height: 6),
-
-                      Row(
-                        children: [
-                          const Icon(Icons.date_range, size: 16),
-                          const SizedBox(width: 6),
-                          Text(data['tanggal'] ?? '-'),
-                        ],
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      Row(
-                        children: [
-                          const Icon(Icons.access_time, size: 16),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${data['jamDimulai']} - ${data['jamSelesai']}',
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 16),
-                          const SizedBox(width: 6),
-                          Expanded(child: Text(data['lokasi'] ?? '-')),
-                        ],
-                      ),
+                      _infoRow(Icons.location_on, data['lokasi']),
 
                       const Divider(height: 20),
 
@@ -103,14 +77,12 @@ class JadwalPage extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           IconButton(
-                            icon:
-                                const Icon(Icons.edit, color: Colors.blue),
+                            icon: const Icon(Icons.edit, color: Colors.blue),
                             onPressed: () =>
                                 _formJadwal(context, doc),
                           ),
                           IconButton(
-                            icon:
-                                const Icon(Icons.delete, color: Colors.red),
+                            icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () =>
                                 _hapusJadwal(context, doc),
                           ),
@@ -127,7 +99,7 @@ class JadwalPage extends StatelessWidget {
     );
   }
 
-  /// ================= FITUR TAMBAH / EDIT =================
+  // ===================== FORM TAMBAH / EDIT =====================
   void _formJadwal(BuildContext context,
       [QueryDocumentSnapshot? doc]) {
     final jenisKegiatan = TextEditingController();
@@ -141,7 +113,7 @@ class JadwalPage extends StatelessWidget {
     final kategoriList = ['Pribadi', 'Kuliah', 'Kerja', 'Lainnya'];
     String selectedKategori = kategoriList.first;
 
-    /// FITUR EDIT APP
+    /// MODE EDIT
     if (doc != null) {
       final data = doc.data() as Map<String, dynamic>;
       jenisKegiatan.text = data['jenisKegiatan'];
@@ -150,18 +122,18 @@ class JadwalPage extends StatelessWidget {
       jamMulai.text = data['jamDimulai'];
       jamSelesai.text = data['jamSelesai'];
       selectedKategori = data['kategori'];
-      selectedDate = (data['tanggalTimestamp'] as Timestamp).toDate();
+      selectedDate =
+          (data['tanggalTimestamp'] as Timestamp).toDate();
     }
 
     showDialog(
       context: context,
       builder: (_) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setStateDialog) {
             return AlertDialog(
-              title: Text(doc == null
-                  ? 'Tambah Jadwal'
-                  : 'Edit Jadwal'),
+              title:
+                  Text(doc == null ? 'Tambah Jadwal' : 'Edit Jadwal'),
               content: SingleChildScrollView(
                 child: Column(
                   children: [
@@ -177,13 +149,15 @@ class JadwalPage extends StatelessWidget {
                     DropdownButtonFormField<String>(
                       initialValue: selectedKategori,
                       items: kategoriList
-                          .map((k) => DropdownMenuItem(
-                                value: k,
-                                child: Text(k),
-                              ))
+                          .map(
+                            (k) => DropdownMenuItem(
+                              value: k,
+                              child: Text(k),
+                            ),
+                          )
                           .toList(),
                       onChanged: (v) =>
-                          setState(() => selectedKategori = v!),
+                          setStateDialog(() => selectedKategori = v!),
                       decoration: const InputDecoration(
                         labelText: 'Kategori',
                         prefixIcon: Icon(Icons.category),
@@ -200,7 +174,7 @@ class JadwalPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
 
-/// ================= Pengaturan Tanggal(DatePicker)=================
+                    /// DATE PICKER
                     TextField(
                       controller: tanggalController,
                       readOnly: true,
@@ -212,10 +186,15 @@ class JadwalPage extends StatelessWidget {
                           firstDate: DateTime(2023),
                           lastDate: DateTime(2030),
                         );
+
+                        if (!mounted) return;
+
                         if (picked != null) {
-                          selectedDate = picked;
-                          tanggalController.text =
-                              '${picked.day}-${picked.month}-${picked.year}';
+                          setStateDialog(() {
+                            selectedDate = picked;
+                            tanggalController.text =
+                                '${picked.day}-${picked.month}-${picked.year}';
+                          });
                         }
                       },
                       decoration: const InputDecoration(
@@ -225,7 +204,7 @@ class JadwalPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
 
-/// ================= Pengaturan JamMulai(timePicker)=================
+                    /// TIME PICKER MULAI
                     TextField(
                       controller: jamMulai,
                       readOnly: true,
@@ -234,9 +213,14 @@ class JadwalPage extends StatelessWidget {
                           context: context,
                           initialTime: TimeOfDay.now(),
                         );
+
+                        if (!mounted) return;
+
                         if (picked != null) {
-                          jamMulai.text =
-                              picked.format(context);
+                          setStateDialog(() {
+                            jamMulai.text =
+                                picked.format(context);
+                          });
                         }
                       },
                       decoration: const InputDecoration(
@@ -246,7 +230,7 @@ class JadwalPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
 
-/// ================= Pengaturan JamMulai(timePicker)=================
+                    /// TIME PICKER SELESAI
                     TextField(
                       controller: jamSelesai,
                       readOnly: true,
@@ -255,9 +239,14 @@ class JadwalPage extends StatelessWidget {
                           context: context,
                           initialTime: TimeOfDay.now(),
                         );
+
+                        if (!mounted) return;
+
                         if (picked != null) {
-                          jamSelesai.text =
-                              picked.format(context);
+                          setStateDialog(() {
+                            jamSelesai.text =
+                                picked.format(context);
+                          });
                         }
                       },
                       decoration: const InputDecoration(
@@ -284,11 +273,11 @@ class JadwalPage extends StatelessWidget {
                         selectedDate == null ||
                         jamMulai.text.isEmpty ||
                         jamSelesai.text.isEmpty) {
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(
+                      ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content:
-                                Text('Semua field wajib diisi')),
+                          content:
+                              Text('Semua field wajib diisi'),
+                        ),
                       );
                       return;
                     }
@@ -306,9 +295,7 @@ class JadwalPage extends StatelessWidget {
                     };
 
                     if (doc == null) {
-                      FirebaseFirestore.instance
-                          .collection('DatabaseApp')
-                          .add(data);
+                      jadwalRef.add(data);
                     } else {
                       doc.reference.update(data);
                     }
@@ -324,7 +311,7 @@ class JadwalPage extends StatelessWidget {
     );
   }
 
-  /// ================= POP UP Peringatan HAPUS APP =================
+  // ===================== HAPUS JADWAL =====================
   void _hapusJadwal(
       BuildContext context, QueryDocumentSnapshot doc) {
     showDialog(
@@ -340,12 +327,29 @@ class JadwalPage extends StatelessWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red),
+              backgroundColor: Colors.red,
+            ),
             onPressed: () {
               doc.reference.delete();
               Navigator.pop(context);
             },
             child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===================== WIDGET INFO BARIS =====================
+  Widget _infoRow(IconData icon, String? text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 16),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(text ?? '-'),
           ),
         ],
       ),
